@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-4">관리자 대시보드</h1>
+
+<h2 class="text-xl font-bold mb-2">FAQ 추가</h2>
+<form action="{{ url_for('main.add_faq') }}" method="POST" class="mb-8">
+    <input type="text" name="question" placeholder="질문" required class="mb-2 p-2 w-full border rounded">
+    <textarea name="answer" placeholder="답변" required class="mb-2 p-2 w-full border rounded"></textarea>
+    <input type="text" name="category" placeholder="카테고리" class="mb-2 p-2 w-full border rounded">
+    <button type="submit" class="bg-blue-500 text-white p-2 rounded">FAQ 추가</button>
+</form>
+
+<h2 class="text-xl font-bold mb-2">FAQ 목록</h2>
+{% for faq in faqs %}
+<div class="mb-4 p-4 border rounded">
+    <h3 class="font-bold">{{ faq.question }}</h3>
+    <p>{{ faq.answer }}</p>
+    <p class="text-sm text-gray-600">카테고리: {{ faq.category }}</p>
+    <div class="mt-2">
+        <a href="{{ url_for('main.edit_faq', id=faq.id) }}" class="text-blue-500">수정</a>
+        <form action="{{ url_for('main.delete_faq', id=faq.id) }}" method="POST" class="inline">
+            <button type="submit" class="text-red-500" onclick="return confirm('정말로 삭제하시겠습니까?');">삭제</button>
+        </form>
+    </div>
+</div>
+{% endfor %}
+
+<a href="{{ url_for('main.logout') }}" class="bg-red-500 text-white p-2 rounded">로그아웃</a>
+{% endblock %}
