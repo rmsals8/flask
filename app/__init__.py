@@ -17,6 +17,13 @@ def create_app():
     from app.routes import bp as main_bp
     app.register_blueprint(main_bp)
 
+    with app.app_context():
+        db.create_all()
+        from app.chatbot import initialize_faq
+        from app.models import FAQ
+        if FAQ.query.count() == 0:
+            initialize_faq()
+
     return app
 
 from app import models
