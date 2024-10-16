@@ -18,6 +18,7 @@ def keyboard():
     return jsonify({"type": "text"})
 
 @bp.route('/message', methods=['GET', 'POST'])
+@cross_origin()
 def message():
     logging.info(f"Received {request.method} request")
     logging.debug(f"Headers: {request.headers}")
