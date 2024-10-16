@@ -17,27 +17,29 @@ def keyboard():
 
 @bp.route('/message', methods=['GET', 'POST'])
 def message():
-    if request.method == 'POST':
-        # 기존의 POST 요청 처리 로직
-        content = request.json['userRequest']['utterance']
-        response_text = get_chatbot_response(content)
-
-        response = {
-            "version": "2.0",
-            "template": {
-                "outputs": [
-                    {
-                        "simpleText": {
-                            "text": response_text
+    try:
+        if request.method == 'POST':
+            content = request.json['userRequest']['utterance']
+            response_text = get_chatbot_response(content)
+            
+            response = {
+                "version": "2.0",
+                "template": {
+                    "outputs": [
+                        {
+                            "simpleText": {
+                                "text": response_text
+                            }
                         }
-                    }
-                ]
+                    ]
+                }
             }
-        }
-        return jsonify(response)
-    else:
-        # GET 요청에 대한 응답
-        return "Chatbot server is running. Please use POST method for chatbot interaction."
+            return jsonify(response)
+        else:
+            return "Chatbot server is running. Please use POST method for chatbot interaction."
+    except Exception as e:
+        print(f"Error in /message route: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 @bp.route('/chat', methods=['GET', 'POST'])
 def chat():
