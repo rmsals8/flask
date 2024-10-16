@@ -2,7 +2,9 @@ import os
 import hashlib
 import hmac
 import base64
-
+import logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 def verify_kakao_signature(request):
     try:
