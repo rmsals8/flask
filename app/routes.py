@@ -17,43 +17,55 @@ def index():
 def keyboard():
     return jsonify({"type": "text"})
 
-@bp.route('/message', methods=['GET', 'POST'])
+@bp.route('/message', methods=['POST'])
 @cross_origin()
 def message():
-    logging.info(f"Received {request.method} request")
-    logging.debug(f"Headers: {request.headers}")
-    logging.debug(f"Data: {request.data}")
+    logger.info(f"Received POST request")
+    logger.debug(f"Headers: {request.headers}")
+    logger.debug(f"Data: {request.get_data(as_text=True)}")
 
-    if request.method == 'POST':
-        try:
-            data = request.get_json(force=True)
-            logging.info(f"Parsed JSON data: {data}")
-            
-            utterance = data['userRequest']['utterance']
-            logging.info(f"Extracted utterance: {utterance}")
-            
-            response_text = get_chatbot_response(utterance)
-            logging.info(f"Generated response: {response_text}")
-            
-            response = {
-                "version": "2.0",
-                "template": {
-                    "outputs": [
-                        {
-                            "simpleText": {
-                                "text": response_text
-                            }
+    if not verify_kakao_signature(request):
+        logger.warning("Invalid Kakao signature")
+        return jsonify({"error": "Invalid signature"}), 401
+
+    try:
+        data = request.get_json()
+        logger.info(f"Parsed JSON data: {data}")
+        
+        utterance = data['userRequest']['utterance']
+        logger.info(f"Extracted utterance: {utterance}")
+        
+        response_text = get_chatbot_response(utterance)
+        logger.info(f"Generated response: {response_text}")
+        
+        response = {
+            "version": "2.0",
+            "template": {
+                "outputs": [
+                    {
+                        "simpleText": {
+                            "text": response_text
                         }
-                    ]
-                }
+                    }
+                ]
             }
-            logging.info(f"Sending response: {response}")
-            return jsonify(response)
-        except Exception as e:
-            logging.error(f"Error processing request: {str(e)}", exc_info=True)
-            return jsonify({"error": str(e)}), 400
-    else:
-        return "Chatbot server is running. Please use POST method for chatbot interaction."
+        }
+        logger.info(f"Sending response: {response}")
+        return jsonify(response)
+    except Exception as e:
+        logger.error(f"Error processing request: {str(e)}", exc_info=True)
+        return jsonify({
+            "version": "2.0",
+            "template": {
+                "outputs": [
+                    {
+                        "simpleText": {
+                            "text": "죄송합니다. 오류가 발생했습니다. 잠시 후 다시 시도해 주세요."
+                        }
+                    }
+                ]
+            }
+        }), 500
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
