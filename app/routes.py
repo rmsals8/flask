@@ -21,6 +21,8 @@ def keyboard():
 @cross_origin()
 def message():
     logging.info(f"Received request: {request.method}")
+    logging.debug(f"Request data: {request.data}")
+    logging.debug(f"Request JSON: {request.json}")
     try:
         if request.method == 'POST':
             logging.debug(f"Request JSON: {request.json}")
