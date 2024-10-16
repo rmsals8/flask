@@ -4,7 +4,9 @@ from app import db
 from app.models import User, FAQ
 from app.chatbot import get_chatbot_response
 from app.kakao_utils import verify_kakao_signature
-
+from flask_cors import cross_origin
+import logging
+logging.basicConfig(level=logging.DEBUG)
 bp = Blueprint('main', __name__)
 
 @bp.route('/')
@@ -16,11 +18,21 @@ def keyboard():
     return jsonify({"type": "text"})
 
 @bp.route('/message', methods=['GET', 'POST'])
+@cross_origin()
 def message():
+    logging.info(f"Received request: {request.method}")
     try:
         if request.method == 'POST':
+            logging.debug(f"Request JSON: {request.json}")
+            
+            if 'userRequest' not in request.json or 'utterance' not in request.json['userRequest']:
+                raise ValueError("Invalid request format")
+            
             content = request.json['userRequest']['utterance']
+            logging.info(f"Received utterance: {content}")
+            
             response_text = get_chatbot_response(content)
+            logging.info(f"Generated response: {response_text}")
             
             response = {
                 "version": "2.0",
@@ -38,9 +50,8 @@ def message():
         else:
             return "Chatbot server is running. Please use POST method for chatbot interaction."
     except Exception as e:
-        print(f"Error in /message route: {str(e)}")
+        logging.error(f"Error in /message route: {str(e)}", exc_info=True)
         return jsonify({"error": str(e)}), 500
-
 @bp.route('/chat', methods=['GET', 'POST'])
 def chat():
     if request.method == 'POST':
