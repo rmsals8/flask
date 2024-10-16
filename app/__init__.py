@@ -3,6 +3,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from config import Config
 from flask_cors import CORS
+import logging
+logging.basicConfig(level=logging.DEBUG)
 db = SQLAlchemy()
 login_manager = LoginManager()
 
