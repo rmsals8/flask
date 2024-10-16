@@ -15,27 +15,29 @@ def index():
 def keyboard():
     return jsonify({"type": "text"})
 
-@bp.route('/message', methods=['POST'])
+@bp.route('/message', methods=['GET', 'POST'])
 def message():
-    if not verify_kakao_signature(request):
-        return jsonify({'message': 'Invalid signature'}), 403
+    if request.method == 'POST':
+        # 기존의 POST 요청 처리 로직
+        content = request.json['userRequest']['utterance']
+        response_text = get_chatbot_response(content)
 
-    content = request.json['userRequest']['utterance']
-    response_text = get_chatbot_response(content)
-
-    response = {
-        "version": "2.0",
-        "template": {
-            "outputs": [
-                {
-                    "simpleText": {
-                        "text": response_text
+        response = {
+            "version": "2.0",
+            "template": {
+                "outputs": [
+                    {
+                        "simpleText": {
+                            "text": response_text
+                        }
                     }
-                }
-            ]
+                ]
+            }
         }
-    }
-    return jsonify(response)
+        return jsonify(response)
+    else:
+        # GET 요청에 대한 응답
+        return "Chatbot server is running. Please use POST method for chatbot interaction."
 
 @bp.route('/chat', methods=['GET', 'POST'])
 def chat():
