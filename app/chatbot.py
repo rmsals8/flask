@@ -1,11 +1,11 @@
 import string
 import random
 from app.models import FAQ, db
-from sentence_transformers import SentenceTransformer, util
-import torch
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
-# BERT 모델 로드
-model = SentenceTransformer('distilbert-base-nli-mean-tokens')
+# TF-IDF 벡터라이저 초기화
+vectorizer = TfidfVectorizer()
 
 def preprocess_text(text):
     # 소문자 변환 및 구두점 제거
@@ -19,20 +19,19 @@ def get_chatbot_response(query):
         if not faqs:
             return "죄송합니다. 아직 등록된 FAQ가 없습니다."
 
-        # 쿼리 전처리 및 임베딩
+        # 쿼리와 FAQ 전처리
         processed_query = preprocess_text(query)
-        query_embedding = model.encode(processed_query, convert_to_tensor=True)
-
-        # FAQ 전처리 및 임베딩
         processed_faqs = [preprocess_text(faq.question) for faq in faqs]
-        faq_embeddings = model.encode(processed_faqs, convert_to_tensor=True)
+
+        # TF-IDF 벡터화
+        tfidf_matrix = vectorizer.fit_transform([processed_query] + processed_faqs)
 
         # 코사인 유사도 계산
-        cos_scores = util.pytorch_cos_sim(query_embedding, faq_embeddings)[0]
-        best_match_idx = torch.argmax(cos_scores)
+        cos_similarities = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:])[0]
+        best_match_idx = cos_similarities.argmax()
         best_match = faqs[best_match_idx]
         
-        similarity_score = cos_scores[best_match_idx].item()
+        similarity_score = cos_similarities[best_match_idx]
 
         if similarity_score > 0.3:  # 유사도 임계값
             answer = best_match.answer
