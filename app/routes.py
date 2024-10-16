@@ -24,16 +24,15 @@ def message():
     logging.debug(f"Data: {request.data}")
 
     if request.method == 'POST':
-        if not request.is_json:
-            logging.error("Request is not JSON")
-            return jsonify({"error": "Request must be JSON"}), 415
-
-        data = request.get_json()
-        logging.info(f"Received JSON data: {data}")
-
         try:
+            data = request.get_json(force=True)
+            logging.info(f"Parsed JSON data: {data}")
+            
             utterance = data['userRequest']['utterance']
+            logging.info(f"Extracted utterance: {utterance}")
+            
             response_text = get_chatbot_response(utterance)
+            logging.info(f"Generated response: {response_text}")
             
             response = {
                 "version": "2.0",
@@ -47,13 +46,11 @@ def message():
                     ]
                 }
             }
+            logging.info(f"Sending response: {response}")
             return jsonify(response)
-        except KeyError as e:
-            logging.error(f"KeyError: {str(e)}")
-            return jsonify({"error": f"Missing key: {str(e)}"}), 400
         except Exception as e:
-            logging.error(f"Error processing request: {str(e)}")
-            return jsonify({"error": str(e)}), 500
+            logging.error(f"Error processing request: {str(e)}", exc_info=True)
+            return jsonify({"error": str(e)}), 400
     else:
         return "Chatbot server is running. Please use POST method for chatbot interaction."
 
