@@ -6,7 +6,8 @@ from app.chatbot import get_chatbot_response
 from app.kakao_utils import verify_kakao_signature
 from flask_cors import cross_origin
 import logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 bp = Blueprint('main', __name__)
 
 @bp.route('/')
@@ -20,10 +21,11 @@ def keyboard():
 @bp.route('/message', methods=['POST'])
 @cross_origin()
 def message():
-    logger.info(f"Received POST request")
-    logger.debug(f"Headers: {request.headers}")
+    logger.info("Received POST request to /message")
+    logger.debug(f"Headers: {dict(request.headers)}")
     logger.debug(f"Data: {request.get_data(as_text=True)}")
 
+    # 카카오 서명 검증 (옵션)
     if not verify_kakao_signature(request):
         logger.warning("Invalid Kakao signature")
         return jsonify({"error": "Invalid signature"}), 401
@@ -31,13 +33,16 @@ def message():
     try:
         data = request.get_json()
         logger.info(f"Parsed JSON data: {data}")
-        
-        utterance = data['userRequest']['utterance']
+
+        # 카카오톡 요청 형식에 맞춰 utterance 추출
+        utterance = data.get('userRequest', {}).get('utterance', '')
         logger.info(f"Extracted utterance: {utterance}")
-        
+
+        # 챗봇 응답 생성
         response_text = get_chatbot_response(utterance)
         logger.info(f"Generated response: {response_text}")
-        
+
+        # 카카오톡 응답 형식에 맞춰 응답 생성
         response = {
             "version": "2.0",
             "template": {
@@ -52,9 +57,10 @@ def message():
         }
         logger.info(f"Sending response: {response}")
         return jsonify(response)
+
     except Exception as e:
-        logger.error(f"Error processing request: {str(e)}", exc_info=True)
-        return jsonify({
+        logger.exception(f"Error processing request: {str(e)}")
+        error_response = {
             "version": "2.0",
             "template": {
                 "outputs": [
@@ -65,7 +71,8 @@ def message():
                     }
                 ]
             }
-        }), 500
+        }
+        return jsonify(error_response), 200  # 오류 시에도 200 상태 코드 반환
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
