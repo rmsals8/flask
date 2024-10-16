@@ -18,23 +18,22 @@ def keyboard():
     return jsonify({"type": "text"})
 
 @bp.route('/message', methods=['GET', 'POST'])
-@cross_origin()
 def message():
-    logging.info(f"Received request: {request.method}")
-    logging.debug(f"Request data: {request.data}")
-    logging.debug(f"Request JSON: {request.json}")
-    try:
-        if request.method == 'POST':
-            logging.debug(f"Request JSON: {request.json}")
-            
-            if 'userRequest' not in request.json or 'utterance' not in request.json['userRequest']:
-                raise ValueError("Invalid request format")
-            
-            content = request.json['userRequest']['utterance']
-            logging.info(f"Received utterance: {content}")
-            
-            response_text = get_chatbot_response(content)
-            logging.info(f"Generated response: {response_text}")
+    logging.info(f"Received {request.method} request")
+    logging.debug(f"Headers: {request.headers}")
+    logging.debug(f"Data: {request.data}")
+
+    if request.method == 'POST':
+        if not request.is_json:
+            logging.error("Request is not JSON")
+            return jsonify({"error": "Request must be JSON"}), 415
+
+        data = request.get_json()
+        logging.info(f"Received JSON data: {data}")
+
+        try:
+            utterance = data['userRequest']['utterance']
+            response_text = get_chatbot_response(utterance)
             
             response = {
                 "version": "2.0",
@@ -49,18 +48,14 @@ def message():
                 }
             }
             return jsonify(response)
-        else:
-            return "Chatbot server is running. Please use POST method for chatbot interaction."
-    except Exception as e:
-        logging.error(f"Error in /message route: {str(e)}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
-@bp.route('/chat', methods=['GET', 'POST'])
-def chat():
-    if request.method == 'POST':
-        user_message = request.form['message']
-        bot_response = get_chatbot_response(user_message)
-        return jsonify({'response': bot_response})
-    return render_template('chat.html')
+        except KeyError as e:
+            logging.error(f"KeyError: {str(e)}")
+            return jsonify({"error": f"Missing key: {str(e)}"}), 400
+        except Exception as e:
+            logging.error(f"Error processing request: {str(e)}")
+            return jsonify({"error": str(e)}), 500
+    else:
+        return "Chatbot server is running. Please use POST method for chatbot interaction."
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
